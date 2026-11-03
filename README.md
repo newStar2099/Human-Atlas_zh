@@ -1,176 +1,85 @@
-# Human Atlas
+# 人体图谱 · Human Atlas（中文版）
 
-An interactive 3D anatomy explorer for the browser. Take an adult human body apart into individually selectable structures, switch anatomical systems on and off, search every named structure, and read what each one does — in English or Arabic.
+一个运行在浏览器里的**交互式 3D 人体解剖图谱**。可以将成年人参考人体拆解为可单独点选的结构件，按解剖系统开关图层，搜索每一个命名结构，并阅读它的功能说明——**默认中文，可切换英文**。
 
-Built with React, Three.js, and shadcn/ui. No API keys, no accounts, no backend: the whole thing is a static site.
+基于 [slorksmo/Human-Atlas](https://github.com/slorksmo/Human-Atlas)（MIT）深度中文化，并新增 HTTPS 认证网关与容器化部署。英文原版说明见 [README.en.md](README.en.md)。
 
-**[Open the atlas](https://atlas.taim.best)**
+<p align="center"><img src="docs/male-reference.png" alt="男性参考人体" width="420"></p>
 
-<p align="center">
-  <img src="docs/male-reference.png" alt="The male reference body with skeleton, muscles, and vasculature shown" width="420">
-</p>
+## 功能特性
 
-<p align="center"><sub>The male reference body, with its skeleton, muscles, and vasculature shown together.</sub></p>
+- **中英双语**：界面 100% 中文化，一键切换；解剖名词 72%+ 中文（其余回退英文显示，与原版阿语策略一致）
+- **两具参考人体**：男性（BodyParts3D 4.0，2,234 结构件 / 3,432 命名概念）与女性（人体参考图谱 v1.10，964 结构件 + 借用骨骼 + 供体肌肉），头部下拉切换
+- **每个网格都可点选**：点按结构即隔离显示并阅读说明（约 256 个重点结构提供中文描述，其余显示所属系统说明）
+- **系统图层**：19 个解剖系统独立开关，骨骼/器官快捷预设
+- **爆炸分解视图**：0%（已合并）→ 100%（逐件清单）；滑杆 + **可直接键入百分比** + 两端快捷切换按钮
+- **灵活的视角操作**：空白处拖拽环绕、**按住人体拖拽平移**、滚轮/捏合缩放、四向预设视角、自动旋转、一键重置
+- **搜索**：支持中文或英文结构名、EDB/FMA 标识符，实时过滤
 
-## Features
+## 快速开始（Docker，推荐）
 
-- **Two reference bodies**, adult male and adult female, switched from the header.
-- **Every mesh is selectable.** Tap a structure to isolate it and read its description.
-- **Systems as layers** — toggle them individually, or use the skeleton and organ presets.
-- **Explode the body** from assembled anatomy to a spaced inventory of every visible piece.
-- **English and Arabic**, with the interface mirroring to right-to-left and search matching either script.
-- **Search by name or source identifier**, in either language.
-- Compact controls and detail panels on phones, in portrait and landscape.
+```sh
+docker compose up -d --build
+```
 
-The body surface and the reproductive system start switched off on both bodies. They stay listed and turn on in one tap, and searching for a structure shows it whatever its system is set to.
+打开 **https://localhost:3443**（自签证书，浏览器提示后选择继续访问即可）。
 
-## Run locally
+**默认账号：`admin` / `admin@2026` —— 登录后请立即修改密码！**
 
-Requires Node.js 22.13 or newer.
+## 本地开发
+
+需要 Node.js ≥ 22.13：
 
 ```sh
 npm ci
-npm run dev
+npm run dev        # http://localhost:3016（无认证，仅调试用）
+npm run build      # 产出静态站点到 dist/
 ```
 
-Open <http://localhost:3016>. `npm run build` produces a static site in `dist/`.
+## HTTPS + 认证说明
 
-## The anatomy
+访问由内置认证网关（`server/server.mjs`）提供：所有页面与模型资源都要求登录，未登录访问自动跳转登录页。
 
-Two reference bodies ship with the viewer. They come from separate research projects, so their coverage differs and they are not directly comparable.
+| 项 | 说明 |
+| --- | --- |
+| 默认账号 | `admin` / `admin@2026`（首次启动自动播种） |
+| 修改密码 | 登录后点击顶栏 🔑 图标，或直接访问 `/change-password`；需验证当前密码，新密码至少 8 位 |
+| 口令存储 | `data/users.json`（scrypt 加盐哈希，绝不存明文） |
+| 会话 | HttpOnly Cookie，12 小时有效；修改密码后全部会话失效 |
+| 证书 | 首次启动自动生成自签证书；正式证书放入 `data/certs/cert.pem` 与 `key.pem` 后重启即用 |
+| 重置账号 | 删除 `data/users.json` 后重启容器，恢复默认 admin/admin@2026 |
 
-| | Source | Structures | Named concepts | Systems | Triangles | Download |
-| --- | --- | --- | --- | --- | --- | --- |
-| Male | BodyParts3D 4.0 | 2,234 | 3,432 | 15 | 2,288,268 | ~34 MB |
-| Female | Human Reference Atlas v1.10 | 1,220 | 1,439 | 18 | 2,765,492 | ~37 MB |
+环境变量（均可在 docker-compose.yml 中调整）：`PORT`（默认 3443）、`DATA_DIR`（默认 /data）、`DIST_DIR`、`CERT_DIR`。
 
-The **male** body is a whole-body reference covering every modeled system, from MRI and anatomical illustration.
+## 解剖学术语中文化管线
 
-The **female** body is an assembly of body surface, brain, and selected organs, including female reproductive anatomy. It is far more detailed than the male body in some places — its brain arrives already divided into 283 individually selectable regions, and its kidney into 87 — and far thinner in others. Of its 1,220 structures, 964 are its own; the remaining 256 fill gaps its source does not model, and are described under [Filling the gaps](#filling-the-gaps).
+`app/terms-zh.json`（概念名 → 中文）由三路合并生成，人工校对永远优先：
 
-Neither body represents every human structure or variation. Individual meshes are distinct from named concepts, which may group several meshes. This is an educational explorer, not a diagnostic or surgical tool.
+1. **人工复核表** `scripts/chinese-review.json`（262 条常用结构名）
+2. **Wikidata 精确连接**：每个概念携带 FMA 解剖学标识符，经 P1402 属性取 zh 标签（`scripts/fetch-chinese-terms.mjs`）
+3. **构词法合成**：BodyParts3D 命名高度语法化（如 "Wall of right atrium"），用词干词典（488 词干 + 351 标准短语）按中文语序组合（`scripts/compose-chinese-terms.mjs`）
 
-## Arabic
+重新生成：`node scripts/fetch-chinese-terms.mjs && node scripts/compose-chinese-terms.mjs`。未覆盖的名称回退英文显示——错误的解剖名词比英文更糟。
 
-The interface, the system names, and the structure descriptions are written in both languages, and the layout mirrors to right-to-left from a single `dir` attribute on the document — the stylesheet uses logical properties throughout, so there is no second stylesheet to keep in step. Search matches either script and folds the Arabic letters that are written more than one way, so a query finds a term however it was typed.
+## 项目结构
 
-Anatomical names are a harder problem than interface text, because a wrong term is worse than an English one: *ilium* and *ileum* differ by a letter in English and are unrelated words in Arabic. So the vocabulary is not translated by hand or by machine. Every concept in the male atlas carries its Foundational Model of Anatomy identifier, and Wikidata records the same identifier against items with Arabic labels, so `scripts/fetch-arabic-terms.mjs` joins the two exactly rather than matching on names. Wikidata is CC0, which is what makes the result redistributable.
+```
+app/            界面与 3D 场景（i18n、解剖数据、合成术语、场景渲染）
+components/     shadcn/ui 组件
+scripts/        术语管线与模型处理脚本
+server/         HTTPS 认证网关（Express + 自签 TLS + 会话管理）
+web/            Vite 入口
+public/models/  两具参考人体模型（约 182MB）
+Dockerfile      多阶段构建（前端构建 → 认证网关运行时）
+```
 
-That join alone reaches 21% of concepts. Most of what it misses is a side or a numbered variant of a name it did find, so those are composed from the base term with the agreement Arabic requires — gender taken from the head noun, and the definite article added when the phrase is definite either by its own article or by annexation. Coverage ends at 43% of the male atlas and 40% of the female, 1,900 terms in all. About 300 of them, the ones a reader is most likely to open, are checked by hand in `scripts/arabic-review.json`; those corrections are applied *before* composition, so every variant is built from a corrected base, and re-running the script never loses them.
+## 数据来源与许可
 
-Structures the vocabulary does not cover stay in English rather than being guessed at — ordinary in Arabic medical teaching, and honest about what is known. Where a name is translated, the English term appears beneath the Arabic one, so the reader always has the word the literature uses.
-
-## How it works
-
-Geometry is merged into batches and drawn with per-structure GPU textures controlling translation, visibility, and selection, while separate component geometry supports accurate picking. Exploded layouts pack only the visible pieces. Rendering updates when the scene changes, so orbit controls stay responsive without thousands of separate draw calls.
-
-Optional WebMCP tools expose anatomy search and inspection to compatible browsers. The visible interface works without them.
-
-## Filling the gaps
-
-The female source models no skull, ribs, shoulder girdle, arm, or foot bones, and almost no muscle. Rather than show half a body, two sets of structures fill those gaps. Both are listed as systems of their own, drawn in their own colours, and switched off until asked for — a reader is never shown another body's anatomy without being told.
-
-### Leg muscles from a second female body
-
-The female source carries sixteen muscles in total, all in the eye and the knee. `scripts/import-lower-limb.mjs` fills the legs from [Andreassen et al. (2023)](https://doi.org/10.1038/s41597-022-01905-2), who segmented 76 lower-limb muscles from the Visible Human Female and released them under CC BY 4.0.
-
-Both bodies model the hip bone, femur, patella, tibia, and fibula, so each group of muscles is fitted to the bones it actually spans — the hip muscles to the pelvis and femur, the thigh to the femur and patella, the calf to the tibia and fibula. The fit is a rotation, a uniform scale, and a translation, so no muscle is distorted, and each group gets its own scale and position so that a difference in limb posture between the two women does not carry through.
-
-The rotation, though, is settled once for the whole import, from the centres of all twelve bones both bodies share. It has to be: an upright bounding box has the same corners however the structure inside it is turned, so fitting box to box cannot tell a pelvis from an upside-down one and will happily report a few millimetres of error either way. Bone centres encode the real arrangement and rule that out.
-
-The two women turn out to be nearly the same size — fitted scales run 0.98 to 1.01 — and the shared bones agree to within 17 to 36 mm depending on the group. The check that matters is anatomical rather than numerical: in this body, gluteus medius ends 7 mm below the top of the pelvis and gluteus maximus 30 mm below, against 6 mm and 36 mm in the donor.
-
-There is no equivalent open female source for the upper limb, so the arms carry bone only. No muscle is taken from the male body: muscle carries the build of the person it came from far too plainly for that to be honest.
-
-### Bones from the male body
-
-`scripts/borrow-anatomy.mjs` borrows 180 bones for the skull, chest, arms, and feet. Placement is measured, not eyeballed. Both bodies model the spine, sternum, pelvis, femur, tibia, fibula, patella, and brain, so each region is fitted by least squares to the structures it attaches to or encloses:
-
-| Region | Bones | Fitted to | Scale |
-| --- | --- | --- | --- |
-| Skull and face | 22 | cervical spine, brain | 0.993 |
-| Ribs and costal cartilage | 38 | thoracic spine, sternum | 0.875 |
-| Shoulder, arm, hand | 64 | upper thoracic spine, sternum | 0.927 |
-| Each foot and ankle | 28 | tibia and fibula of that leg | 0.898 |
-
-Scale alone still leaves a limb in the donor's pose, and the two bodies do not stand alike — this one holds its arms further from the trunk and its feet straighter. So each limb is then turned about its own joint until it runs along the limb of this body's own surface:
-
-| Limb | Turn | Reach |
+| 数据 | 来源 | 许可 |
 | --- | --- | --- |
-| Left arm | 21.4° | ×0.98 |
-| Right arm | 23.4° | ×0.95 |
-| Left foot | 18.4° | ×1.20 |
-| Right foot | 16.8° | ×1.19 |
+| 男性参考人体 | BodyParts3D 4.0，© The Database Center for Life Science | CC BY 4.0 |
+| 女性参考人体 | 3D Reference Organ Set for Female v1.10（HuBMAP 人体参考图谱），基于美国国家医学图书馆可见人体数据集 | CC BY 4.0 |
+| 中文名称 | Wikidata 标签与别名 | CC0 |
+| 代码 | 上游 slorksmo/Human-Atlas 及本仓库改动 | MIT |
 
-A bone turns as one rigid piece, about the centre of its rounded joint end, so the humeral head stays seated in the shoulder while the shaft swings out. Every anchor lands within 25 mm of its counterpart, and the result is checkable against the body surface: the brain sits wholly inside the borrowed cranium, the heart and lungs inside the borrowed ribcage, the foot bones inside the skin of the foot to within about a centimetre.
-
-These remain a different person's bones, and a man's. They stand in for shape and position, and carry none of the skeletal differences between the sexes outside the pelvis, which is this body's own. Drop the system once a complete female source exists.
-
-## Rebuilding the data
-
-Browser-ready geometry is included, so rebuilding is optional. Simplification uses a 0.2% relative error limit per structure throughout.
-
-**Male body** — obtain the BodyParts3D OBJ archive and English metadata tables, prepare the joined concepts and display-system mappings, then:
-
-```sh
-python3 scripts/convert-anatomy.py OBJ_DIRECTORY CONCEPT_MAP SYSTEM_MAP
-node scripts/optimize-anatomy.mjs
-node scripts/compress-models.mjs
-```
-
-**Female body** — download the source GLB and the Visible Human Female STL set linked in [ATTRIBUTION.md](public/ATTRIBUTION.md), then:
-
-```sh
-node --max-old-space-size=8192 scripts/convert-anatomy-glb.mjs v1.10.glb --supplement v1.5.glb
-node --max-old-space-size=8192 scripts/optimize-anatomy.mjs atlas-female.json
-node scripts/borrow-anatomy.mjs
-node scripts/import-lower-limb.mjs path/to/"Final 3D STL Models-stl"
-node scripts/compress-models.mjs
-```
-
-Keep that order. `borrow-anatomy` and `import-lower-limb` each append geometry to the end of the packaged chunks, and each replaces whatever its own previous run added, so either can be re-run on its own.
-
-`--supplement` restores the ischium and pubis, which release v1.10 dropped and v1.5 carried; the bone geometry of the two releases is identical in world space, so the restored pieces need no fitting. Naming and system grouping live in `scripts/anatomy-female-systems.mjs`. Passing `--dump` to the converter prints the source scene graph without writing anything.
-
-**Arabic vocabulary** — rebuild after changing either atlas, since it is keyed on their concept names:
-
-```sh
-node scripts/fetch-arabic-terms.mjs
-```
-
-It queries Wikidata and caches the answers in `scripts/arabic-wikidata.cache.json`; `--offline` rebuilds from that cache alone.
-
-## Validate
-
-```sh
-npm run check
-node scripts/validate-atlas.mjs
-node scripts/validate-atlas.mjs atlas-female.json
-node scripts/validate-interactions.mjs
-npm run build
-```
-
-Automated checks cover mesh buffers, names and concept membership, nonoverlapping exploded layouts at desktop and mobile aspect ratios for both bodies, search and inspection contracts, and tap-versus-drag handling.
-
-Browser checks have exercised selection, system controls, search, isolation, rotation, language switching, and 390×844, 320×568, and 844×390 layouts. Phone controls stay clear of the exploded inventory, and isolated structures fit the space above or beside the detail panel.
-
-Not tested: physical-device performance and real multitouch hardware.
-
-## Deploy
-
-Import the repository into Vercel as a Vite project; the included `vercel.json` configures `npm ci`, `npm run build`, and the `dist` output directory. Any static host works.
-
-## Credits and licence
-
-Application code is released under the [MIT License](LICENSE).
-
-**The anatomy data is not.** It is licensed **CC BY 4.0**, which requires that attribution travel with it. Full credits, source links, and a record of every adaptation are in [ATTRIBUTION.md](public/ATTRIBUTION.md), which ships with the site. In short:
-
-- **BodyParts3D**, © The Database Center for Life Science — the male body.
-- **Human Reference Atlas**, HuBMAP, by Kristen Browne and Heidi Schlehlein, built on the Visible Human Project of the U.S. National Library of Medicine — the female body.
-- **Andreassen et al. (2023)**, University of Denver — the female lower-limb muscles.
-- **Wikidata** (CC0) — the Arabic anatomical vocabulary.
-
-Third-party dependencies retain their own licences.
-
-Issues and pull requests are welcome. For interaction problems, please include reproduction steps and browser and device details.
+本图谱是解剖学教学参考，不是诊断或手术工具。
