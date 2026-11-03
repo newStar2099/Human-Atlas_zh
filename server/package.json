@@ -1,0 +1,9 @@
+{
+  "name": "human-atlas-server",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "express": "4.21.2",
+    "selfsigned": "2.4.1"
+  }
+}

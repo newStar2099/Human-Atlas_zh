@@ -1,0 +1,9 @@
+node_modules
+server/node_modules
+server/package-lock.json
+dist
+data
+.git
+.github
+docs
+*.md

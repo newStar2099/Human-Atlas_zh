@@ -1,0 +1,14 @@
+services:
+  human-atlas:
+    build: .
+    image: human-atlas:zh-1.0
+    container_name: human-atlas
+    ports:
+      - "3443:3443"
+    volumes:
+      # users.json (账号与口令哈希)、session-secret、自签证书都持久化在这里；
+      # 如需使用自己的证书，放入 ./data/certs/cert.pem 与 key.pem 后重启。
+      - ./data:/data
+    environment:
+      - PORT=3443
+    restart: unless-stopped
